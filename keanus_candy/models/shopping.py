@@ -16,6 +16,16 @@ class CartItem:
     def subtotal(self):
         """Calculate the subtotal for this cart item."""
         return self.candy.price * self.quantity
+    def to_dict(self) -> dict:
+        """Serialize this cart item for logs/tests/UI."""
+        return {"candy": getattr(self.candy, "name", str(self.candy)),
+                "price": float(getattr(self.candy, "price", 0.0)),
+                "quantity": int(self.quantity),
+                "subtotal": float(self.subtotal())}
+
+    def __repr__(self) -> str:
+        return f"CartItem(candy={getattr(self.candy, 'name', self.candy)}, qty={self.quantity})"
+
 
 
 class ShoppingCart:
@@ -50,6 +60,39 @@ class ShoppingCart:
     def get_items(self) -> List[CartItem]:
         """Get a copy of the cart items."""
         return self._items.copy()
+    def remove_item(self, candy) -> bool:
+        """Remove the first matching candy from the cart. Returns True if removed."""
+        for i, item in enumerate(self._items):
+            if item.candy == candy:
+                del self._items[i]
+                return True
+        return False
+
+    def update_quantity(self, candy, quantity: int) -> None:
+        """
+        Set the quantity for an existing item.
+        If quantity <= 0, the item is removed.
+        """
+        for item in self._items:
+            if item.candy == candy:
+                if quantity <= 0:
+                    self.remove_item(candy)
+                else:
+                    item.quantity = int(quantity)
+                return
+        # If not found and quantity > 0, treat as add:
+        if quantity > 0:
+            self.add_item(candy, int(quantity))
+
+    def clear(self) -> None:
+        """Remove all items from the cart."""
+        self._items.clear()
+
+    def calculate_total(self) -> float:
+        """Calculate the total with standard currency rounding (2 decimals)."""
+        total = sum(item.subtotal() for item in self._items)
+        return round(float(total), 2)
+
 
 
 class Order:
